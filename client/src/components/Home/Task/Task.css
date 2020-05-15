@@ -1,0 +1,44 @@
+.Task{
+    display: flex;
+    list-style: none;
+    width: 100%;
+    height: 60px;
+    padding: 0;
+    align-items: center;
+    border-radius: 10px;
+    margin-left: 6%;
+}
+
+.TaskWrapper{
+    display: flex;
+    margin: 20px auto;
+    width: 90%;
+    justify-content: center;
+
+}
+
+.Task__description{
+    width: 38%;
+    padding: 5px;
+    text-align: center;
+}
+
+.Task__date{
+    width: 30%;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.Task__delete{
+    width: 4%;
+    margin-right: 10px;
+}
+
+.Task__status{
+    width: 28%;
+}
+
+.savebtn{
+    margin-top: 12px;
+}
