@@ -38,7 +38,7 @@ router.post('/addTask', urlencodedParser, function(req, res, next) {
   res.render('index', { title: 'To Do List', tasks: taskList });
 });
 
-router.post('/deleteTask/:id', urlencodedParser, function(req, res, next){
+router.delete('/deleteTask/:id', urlencodedParser, function(req, res, next){
   if(!req.body) return res.sendStatus(400);
   var id = req.params["id"];
   var content = fs.readFileSync("data.json", "utf8");
@@ -64,7 +64,7 @@ router.post('/deleteTask/:id', urlencodedParser, function(req, res, next){
   }
 });
 
-router.post('/editTask/:id', urlencodedParser, function(req, res, next){
+router.get('/editTask/:id', urlencodedParser, function(req, res, next){
   if(!req.body) return res.sendStatus(400);
   var content = fs.readFileSync("data.json", "utf8");
   var taskList = JSON.parse(content);
@@ -72,7 +72,7 @@ router.post('/editTask/:id', urlencodedParser, function(req, res, next){
   res.render('edit', { title: 'To Do List', tasks: taskList, id: editId });
 });
 
-router.post('/applyTask/:id', urlencodedParser, function(req, res, next){
+router.put('/applyTask/:id', urlencodedParser, function(req, res, next){
   if(!req.body) return res.sendStatus(400);
   var content = fs.readFileSync("data.json", "utf8");
   var taskList = JSON.parse(content);
