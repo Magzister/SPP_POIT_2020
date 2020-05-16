@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-exports.createToken = async (res, body) => {
+exports.createToken = (body) => {
 
     let token = null;
     const lifeTime = 3600 * 24 * 1000;
@@ -9,16 +9,10 @@ exports.createToken = async (res, body) => {
 
         token = jwt.sign(body, process.env.JWT_SECRET, { expiresIn: lifeTime });
 
-        console.log(token);
-
-        return res.cookie('token', token, {
-            expires: new Date(Date.now() + lifeTime),
-            secure: false,
-            httpOnly: true,
-        }).send();
+        return token;
     } catch (error) {
         console.log(error);
-        res.status(500).send();
+        throw error;
     }
 }
 
@@ -28,21 +22,17 @@ exports.removeToken = (req, res, next) => {
     res.clearCookie('token').send();
 }
 
-exports.isValidToken = async (req, res, next) => {
-    const token = req.cookies ? req.cookies.token : false;
+exports.isValidToken = (token) => {
     try {
         if (!token) {
-            return res.status(401).json('You should to Login')
+            return false;
         }
-        const decrypt = await jwt.verify(token, process.env.JWT_SECRET);
-        req.user = {
-            id: decrypt.id,
-            nick: decrypt.nick,
-        };
-        console.log(req.user);
-        next();
+        const decrypt = jwt.verify(token, process.env.JWT_SECRET);
+        
+        return decrypt.id;
     } catch (err) {
-        return res.status(500).json(err.toString());
+        console.log(err);
+        throw err;
     }
 
 }

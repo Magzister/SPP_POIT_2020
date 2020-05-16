@@ -8,16 +8,33 @@ import SignUp from './components/SignUp/SignUp';
 import Navbar from './components/Global/Navbar/Navbar';
 import { AuthContext } from './context';
 import './App.css';
+import openSocket from 'socket.io-client';
+
+export const socket = openSocket('ws://localhost:8080', {transports: ['websocket']});
 
 class App extends Component {
 
-  state = {
-    isAuthorised: true
+
+  constructor(props) {
+    super(props);
+
+    const jwt = localStorage.getItem('jwt');
+
+
+    this.state = {
+      isAuthorised: !!jwt,
+      jwt
+    };
   }
 
-  setAuthorised = (isAuthorised) => {
+  componentWillUnmount(){
+    socket.close();
+  }
+
+  setAuthorised = (isAuthorised, jwt) => {
     this.setState({
-      isAuthorised
+      isAuthorised,
+      jwt
     });
   }
 
@@ -28,7 +45,7 @@ class App extends Component {
           <Helmet>
             <style>{'body { background-color: #dfe6e9; }'}</style>
           </Helmet>
-          <AuthContext.Provider value={{ isAuthorised: this.state.isAuthorised, setAuthorised: this.setAuthorised }}>
+          <AuthContext.Provider value={{ jwt: this.state.jwt, isAuthorised: this.state.isAuthorised, setAuthorised: this.setAuthorised, setJWT:  this.setJwt}}>
             <Navbar></Navbar>
             <Switch>
               <Route exact path="/" render={props => <Home {...props}></Home>} />

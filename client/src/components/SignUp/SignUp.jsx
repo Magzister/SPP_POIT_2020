@@ -1,9 +1,9 @@
 import * as React from 'react';
-import axios from 'axios';
-import { Redirect } from 'react-router';
-import { Col, Button, Form, FormGroup, Label, Input, FormText, FormFeedback } from 'reactstrap';
+import { Col, Button, Form, FormGroup, Label, Input } from 'reactstrap';
 import * as PasswordValidator from 'password-validator';
 import './SignUp.css';
+import { signUp } from '../../socketEvents';
+import {socket} from '../../App';
 
 export default class SignIn extends React.Component {
 
@@ -32,8 +32,20 @@ export default class SignIn extends React.Component {
         this.setState({
             ...this.state,
             schema
+        });
+
+        socket.on(signUp, (data) => {
+            if(data.error){
+                this.setState({
+                    ...this.state,
+                    signUpError: data.error,
+                })
+            }else{
+                this.props.history.push('/sign-in');
+            }
         })
     }
+
 
     _handleChange = (event) => {
         this.setState({
@@ -45,21 +57,14 @@ export default class SignIn extends React.Component {
         event.preventDefault();
 
         try {
-            let response = await axios.post('http://localhost:8080/signUp', {
+
+            socket.emit(signUp, {
                 nick: this.state.nick,
                 password: this.state.password
-            })
-
-            console.log(response);
-
-            this.props.history.push('/sign-in');
+            });
 
         } catch (error) {
-            console.log(error.response.data);
-            this.setState({
-                ...this.state,
-                signUpError: error.response.data,
-            })
+            console.log(error);
         }
     }
 

@@ -2,8 +2,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const tasksRouter = require('./routes/tasks');
-const authRouter = require('./routes/authentification');
+const http = require('http');
+const setUpEventsHandlers = require('./routes');
+const socketIo = require('socket.io');
 require('dotenv').config();
 
 let app = express();
@@ -18,15 +19,17 @@ app.use(cors({
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.use('/', tasksRouter);
-
-app.use('/', authRouter);
-
 app.get("/", (req, res) => {
-    res.send("Everything is working.");
-})
+    res.send("vse chetka");
+});
 
 
-app.listen(8080, () => {
-    console.log("Server started")
-})
+const server = http.Server(app);
+server.listen(8080, '127.0.0.1');
+
+const io = socketIo(server);
+
+io.on('connection', (socket) => {
+    console.log('connected');
+    setUpEventsHandlers(socket);
+});

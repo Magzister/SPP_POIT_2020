@@ -1,14 +1,16 @@
 const User = require('../models/user');
-const validator = require('validator');
 const jwtHelpers = require('../helpers/jwtHelpers');
+const {signIn, signUp} = require('../event-constants');
 
-exports.createNewUser = async (req, res, next) => {
 
-    console.log(req.body);
+exports.createNewUser = async (socket, data) => {
 
-    const { nick, password } = req.body;
+    console.log(data);
+
+    const { nick, password } = data;
 
     try {
+
             const userWithSamenick = await User.findOne({ nick });
 
             if (!userWithSamenick) {
@@ -17,20 +19,24 @@ exports.createNewUser = async (req, res, next) => {
 
                 await newUser.save();
 
-                res.sendStatus(200);
+                return socket.emit(signUp, { msg: 'successfully'});
+
             } else {
-                res.status(500).send('This nick is busy');
+                return socket.emit(signUp, { error: 'This nick is busy'});
             }
 
     } catch (err) {
         console.log(err);
+        return socket.emit(signUp, { error: 'Server error'});
     }
 
 }
 
-exports.checkForUserExistence = async (req, res, next) => {
+exports.checkForUserExistence = async (socket, data) => {
 
-    const { nick, password } = req.body;
+    console.log(data);
+
+    const { nick, password } = data;
 
     try {
 
@@ -40,18 +46,19 @@ exports.checkForUserExistence = async (req, res, next) => {
 
             user.validPassword(password, (err, result) => {
                 if (result) {
-                    jwtHelpers.createToken(res, { nick, id: user._id });
+                    const token = jwtHelpers.createToken({ nick, id: user._id });
+                    return socket.emit(signIn, {token});
                 } else {
-                    return res.status(401).send('Incorrect password');
+                    return socket.emit(signIn, { error: 'Incorrect password'});
                 }
             })
 
         } else {
-            res.status(401).send('There are no such user.');
+            return socket.emit(signIn, { error: 'There are no such user.'});
         }
 
     } catch (error) {
         console.log(error);
-        res.status(500).send(error);
+        return socket.emit(signIn, { error: 'Server error'});
     }
 }

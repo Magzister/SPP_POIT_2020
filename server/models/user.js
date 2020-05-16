@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 const bcrypt = require("../node_modules/bcrypt/bcrypt");
 require("../node_modules/dotenv").config();
 
-mongoose.connect(process.env.DB_ADDRESS, { useNewUrlParser: true, useUnifiedTopology: true, dbName: "MPP3" })
+mongoose.connect(process.env.DB_ADDRESS, { useNewUrlParser: true, useUnifiedTopology: true, dbName: "MPP2" })
   .catch(error => {
     console.log(error);
   });

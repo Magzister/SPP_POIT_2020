@@ -1,10 +1,10 @@
 import * as React from 'react';
-import axios from 'axios';
-import { Redirect } from 'react-router';
 import { Col, Button, Form, FormGroup, Label, Input, FormText } from 'reactstrap';
 import './SignIn.css';
 import * as PasswordValidator from 'password-validator';
 import { AuthContext } from '../../context';
+import { signIn } from '../../socketEvents';
+import {socket} from '../../App';
 
 export default class SignIn extends React.Component {
 
@@ -33,7 +33,22 @@ export default class SignIn extends React.Component {
         this.setState({
             ...this.state,
             schema
+        });
+
+        socket.on(signIn, (data) => {
+
+            if(data.error){
+                this.setState({ signInError: data.error });
+                this.context.setAuthorised(false);
+            }else{
+                console.log(this.context);
+                localStorage.setItem('jwt', data.token);
+                this.context.setAuthorised(true, data.token);
+                this.props.history.push('/');
+            }
+
         })
+
     }
 
     _handleChange = (event) => {
@@ -46,21 +61,9 @@ export default class SignIn extends React.Component {
         event.preventDefault();
 
         try {
-
-            const response = await axios.post('http://localhost:8080/signIn', {
-                nick: this.state.nick,
-                password: this.state.password
-            }, { withCredentials: true });
-
-            console.log(response);
-            this.context.setAuthorised(true);
-
-            this.props.history.push('/');
-
+            socket.emit(signIn, {nick: this.state.nick, password: this.state.password});
         } catch (error) {
             console.log(error);
-            this.setState({ signInError: error.response.data })
-            this.context.setAuthorised(false);
         }
     }
 

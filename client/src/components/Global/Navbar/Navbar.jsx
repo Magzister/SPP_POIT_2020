@@ -24,15 +24,8 @@ export default class Navmenu extends React.PureComponent {
 
         console.log(this.context);
 
-        try {
-            const response = await axios.get('http://localhost:8080/signOut', { withCredentials: true });
-
-            console.log(response);
-
-            this.context.setAuthorised(false);
-        } catch (error) {
-            console.log(error);
-        }
+        localStorage.removeItem('jwt');
+        this.context.setAuthorised(false, null);
     }
 
     render() {

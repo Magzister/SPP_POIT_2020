@@ -1,80 +1,112 @@
 const Task = require('../models/task');
+const {isValidToken} = require('../helpers/jwtHelpers');
+const {getTasks, postTask,  updateTask, deleteTask} = require('../event-constants');
 
-exports.getTasks = async (req, res, next) => {
+exports.getTasks = async (socket, data) => {
 
-    const { progress } = req.query;
+    console.log(data);
 
-    try {
-        let tasks = await Task.find({ userId: req.user.id, progress: { $in: progress.split(',') } });
+    const { progress, token } = data;
 
-        return res.status(200).send(tasks);
+    const userId = isValidToken(token);
 
-    } catch (err) {
-        return res.status(500).send();
+    if(userId){
+        try {
+            let tasks = await Task.find({ userId, progress: { $in: progress } });
+
+            return socket.emit(getTasks, {tasks});
+
+        } catch (err) {
+            console.log(err);
+            return socket.emit(getTasks, {error: 'Server error'});
+        }
     }
+
+    socket.emit(getTasks, {error: 'Unauthorised'});
 
 }
 
-exports.addTask = async (req, res, next) => {
-    const { description, date, file, progress } = req.body;
+exports.addTask = async (socket, data) => {
 
-    try {
+    console.log('here');
 
-        let task = new Task({
-            description,
-            date,
-            file,
-            progress,
-            userId: req.user.id
-        });
+    console.log(data);
 
-        task = await task.save();
+    const { description, date, file, progress, token, index } = data;
 
-        return res.status(200).send(task);
+    const userId = isValidToken(token);
 
-    } catch (err) {
-        console.log(err);
-        return res.status(500).send();
+    if(userId){
+        try {
+
+            let task = new Task({
+                description,
+                date,
+                file,
+                progress,
+                userId
+            });
+
+            task = await task.save();
+
+            console.log(task._doc);
+
+            return socket.emit(postTask, {...task._doc, index});
+
+        } catch (err) {
+            console.log(err);
+            return socket.emit(postTask, {error: 'Server error'});
+        }
     }
+
+    socket.emit(postTask, {error: 'Unauthorised'});
 
 }
 
-exports.updateTask = async (req, res) => {
+exports.updateTask = async (socket, data) => {
 
-    const { taskId } = req.params;
-    const { description, date, file, progress } = req.body;
+    const { taskId, description, date, file, progress, token } = data;
 
-    try {
+    const userId = isValidToken(token);
 
-        const updatedTask = await Task.updateOne({ _id: taskId }, { $set: { description, date, file, progress } });
+    if(userId){
+        try {
 
-        res.status(200).send(updatedTask);
+            const updatedTask = await Task.updateOne({ _id: taskId }, { $set: { description, date, file, progress } });
 
-    } catch (err) {
-        console.log(err);
-        return res.status(500).send();
+            return socket.emit(updateTask, {...updatedTask, taskId});
+
+        } catch (err) {
+            console.log(err);
+            return socket.emit(updateTask, {error: 'Server error'});
+        }
     }
+
+    socket.emit(updateTask, {error: 'Unauthorised'});
+
 }
 
-exports.deleteTask = async (req, res) => {
+exports.deleteTask = async (socket, data) => {
 
-    console.log(req.params);
+    const { taskId, token } = data;
 
-    const { taskId } = req.params;
+    const userId = isValidToken(token);
 
-    try {
+    if(userId){
+        try {
 
-        console.log("deletion");
+            const result = await Task.findByIdAndDelete(taskId);
 
-        const result = await Task.findByIdAndDelete(taskId);
+            console.log(result);
 
-        console.log(result);
+            return socket.emit(deleteTask, {msg: 'successfully'});
 
-        res.status(200).send();
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).send();
+        } catch (error) {
+            console.log(err);
+            return socket.emit(deleteTask, {error: 'Server error'});
+        }
     }
+
+    socket.emit(deleteTask, {error: 'Unauthorised'});
 
 }
