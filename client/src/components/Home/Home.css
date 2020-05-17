@@ -1,0 +1,10 @@
+.Filters{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    list-style: none;
+    padding: 0px;
+    width: 60%;
+    height: 50px;
+    margin: 5px auto;
+}
