@@ -2,10 +2,10 @@ import React, { Component } from 'react';
 import Task from './Task/Task';
 import './Home.css';
 import moment from 'moment';
+import axios from 'axios';
 import { AuthContext } from '../../context';
 import { Redirect } from 'react-router-dom';
-import { updateTask, deleteTask, getTasks,  postTask} from '../../socketEvents';
-import {socket} from '../../App';
+import { graphqlEndpoint } from '../../App';
 
 export default class Home extends Component {
 
@@ -21,70 +21,41 @@ export default class Home extends Component {
     }
 
     componentDidMount() {
-
-        this._getTasks(['todo', 'in progress', 'ready']);
-
-
-
-        socket.on(getTasks, (data) => {
-            if(data.error){
-                console.log(data);
-                if (data.error === 'Unauthorised') {
-                    this.context.setAuthorised(false);
-                    this.props.history.push('/sign-in');
-                }
-            }else{
-                console.log(data);
-                this.setState({
-                    ...this.state,
-                    tasks: data.tasks.map((task) => ({...task, index: task._id}))
-                });
-            }
-
-        });
-
-        socket.on(deleteTask, (data) => {
-            console.log(data);
-        });
-
-
-        socket.on(postTask, (data) => {
-            if(data.error){
-                console.log(data);
-            }else{
-                const {index, _id} = data;
-                console.log(data);
-                const tasks = [...this.state.tasks];
-
-                const deleteStartIndex = tasks.findIndex((value) => { return value.index === index});
-
-                tasks.splice(deleteStartIndex, 1);
-
-                tasks.splice(deleteStartIndex, 0, {
-                    ...data,
-                    _id,
-                    isNew: false,
-                    isChanged: false
-                });
-
-                this.setState({
-                    ...this.state,
-                    tasks
-                });
-            }
-        });
-
-        socket.on(updateTask, (data) => {
-            console.log(data);
-        });
+        this._getTasks(["todo", "in progress", "ready"]);
     }
 
-    _getTasks = async (progress) => {
+    _getTasks = async (states) => {
         try {
 
-            console.log(this.context);
+            console.log(JSON.stringify(states).slice(1, -1));
 
-            socket.emit(getTasks, {progress, token: this.context.jwt});
+            const response = await axios.post(graphqlEndpoint, {
+
+
+                query: `
+                    query{
+                        getTasks(progress: [${JSON.stringify(states).slice(1, -1)}]){
+                            _id,
+                            description,
+                            date,
+                            progress
+                        }
+                    }
+                `
+            }, { withCredentials: true });
+
+            console.log(response);
+
+            if (response.data.errors) {
+                this.context.setAuthorised(false);
+                this.props.history.push('/sign-in');
+            } else {
+                this.setState({
+                    ...this.state,
+                    tasks: response.data.data.getTasks.map((task) => ({...task, index: task._id}))
+                });
+
+            }
 
         } catch (error) {
             console.log(error);
@@ -123,12 +94,12 @@ export default class Home extends Component {
             isChanged: true,
             isNew: true,
             index
-        });
+        })
 
         this.setState({
             ...this.state,
             tasks
-        });
+        })
 
     }
 
@@ -137,10 +108,56 @@ export default class Home extends Component {
 
         try {
 
+            let response;
+
+            const { description, date, progress } = task;
+
             if (task.isNew) {
-                socket.emit(postTask, {...task, token: this.context.jwt});
+
+
+                response = await axios.post(graphqlEndpoint, {
+                    query: `
+                        mutation{
+                                createTask(task: {description: "${description}", date: "${date}", progress:"${progress}"}){
+                                _id
+                            }
+                        }
+                    `
+                }, { withCredentials: true });
+
+                console.log(response);
+
+                const tasks = [...this.state.tasks];
+
+                const deleteStartIndex = tasks.findIndex((value) => { return value.index === task.index });
+
+                tasks.splice(deleteStartIndex, 1);
+
+                tasks.splice(deleteStartIndex, 0, {
+                    ...task,
+                    _id: response.data.data.createTask._id,
+                    isNew: false,
+                    isChanged: false
+                });
+
+                this.setState({
+                    ...this.state,
+                    tasks
+                });
+
             } else {
-                socket.emit(updateTask, {...task, taskId: task._id ? task._id : task.index, token: this.context.jwt});
+                console.log(task);
+                response = await axios.post(graphqlEndpoint, {
+                    query: `
+                        mutation{
+                            updateTask(task: {id: "${task._id ? task._id : task.index}", description: "${description}", date: "${date}", progress:"${progress}"}){
+                                description
+                            }
+                        }
+                    `
+                }, { withCredentials: true });
+
+                console.log(response);
             }
 
             this._getTasks(Object.values(this.state.filters).filter((filter) => { return filter.checked }).map(filter => filter.name));
@@ -153,13 +170,25 @@ export default class Home extends Component {
     _deleteTask = async (task) => {
 
         try {
+
+            let response;
+
             const tasks = [...this.state.tasks];
 
-            console.log(tasks.splice(tasks.findIndex((value) => { return value.index === task.index }), 1));
+            tasks.splice(tasks.findIndex((value) => { return value.index === task.index }), 1);
 
 
             if (!task.isNew) {
-                socket.emit(deleteTask, { taskId: task._id ? task._id : task.index, token: this.context.jwt });
+                response = await axios.post(graphqlEndpoint, {
+                    query: `
+                        mutation{
+                            deleteTask(taskId: "${task._id ? task._id : task.index}"){
+                                description
+                            }
+                        }
+                    `
+                }, { withCredentials: true });
+                console.log(response);
             }
 
             this.setState({

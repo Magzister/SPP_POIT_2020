@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Button } from 'reactstrap';
 import './Task.css';
+import moment from 'moment';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -9,7 +10,6 @@ class Task extends Component {
     state = {
         ...this.props,
     }
-
 
     static getDerivedStateFromProps(props, state) {
 
@@ -35,13 +35,46 @@ class Task extends Component {
     }
 
     _dateChangeHandler = date => {
+
         this.setState({
             ...this.state,
-            date: date.toDateString()
+            date: date.toDateString(),
+            isChanged: true,
         });
     }
 
+/*
+    _dateChangeHandler = (event) => {
+
+        let isDateValid;
+
+        if (!moment(event.target.value, 'DD-MM-YYYY').isValid() || (event.target.value.length < 10)) {
+            if (!this.state.isDateValid)
+                event.target.classList.add('is-invalid');
+
+            isDateValid = false;
+
+        } else {
+            if (!this.state.isDateValid) {
+                event.target.classList.remove('is-invalid');
+
+                isDateValid = true;
+
+            }
+        }
+
+        this.setState({
+            ...this.state,
+            date: event.target.value,
+            isChanged: true,
+            isDateValid
+        });
+
+    }
+
     _fileChangeHandler = (event) => {
+        console.log(event.target.files);
+
         this.setState({
             ...this.state,
             file: event.target.files[0]
@@ -49,7 +82,7 @@ class Task extends Component {
 
     }
 
-
+*/
     _saveChanges = (event) => {
 
         this.props.updateTask({
@@ -66,6 +99,12 @@ class Task extends Component {
     _deleteTask = (event) => {
         this.props.deleteTask(this.state);
     }
+
+    handleChange = date => {
+      this.setState({
+        startDate: date
+      });
+    };
 
     render() {
 
@@ -92,7 +131,7 @@ class Task extends Component {
                     </li>
                 </ul>
                 <button disabled={this.state.description.length === 0} className={`btn btn-warning ml-1 h-75 savebtn ${this.state.isChanged ? "visible" : "invisible"}`} onClick={this._saveChanges}>
-                    Save
+                Save
                 </button>
             </div>
         )

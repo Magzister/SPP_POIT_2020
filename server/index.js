@@ -2,9 +2,13 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const http = require('http');
-const setUpEventsHandlers = require('./routes');
-const socketIo = require('socket.io');
+const tasksRouter = require('./routes/tasks');
+const authRouter = require('./routes/authentification');
+const { ApolloServer, gql } = require('apollo-server-express');
+const { isValidToken } = require('./helpers/jwtHelpers');
+const { checkForUserExistence } = require('./controllers/user');
+const { schema, resolvers } = require('./graphql/schema');
+const { removeToken } = require('./helpers/jwtHelpers');
 require('dotenv').config();
 
 let app = express();
@@ -19,17 +23,21 @@ app.use(cors({
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.get("/", (req, res) => {
-    res.send("vse chetka");
+app.use('/signIn', checkForUserExistence);
+
+app.use('/signOut', removeToken);
+
+app.use('/graphql', isValidToken);
+
+const server = new ApolloServer({ typeDefs: gql(schema), resolvers, context: ({ req, res }) => ({ req, res }) });
+
+server.applyMiddleware({
+    app, path: '/graphql', cors: {
+        credentials: true,
+        origin: true
+    },
 });
 
-
-const server = http.Server(app);
-server.listen(8080, '127.0.0.1');
-
-const io = socketIo(server);
-
-io.on('connection', (socket) => {
-    console.log('connected');
-    setUpEventsHandlers(socket);
+app.listen(8080, () => {
+    console.log("Server started")
 });
